@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "quantity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "orderedProduct": {
+      "type": "product",
+      "outOfStockProductPermitted": false,
+      "minimumPrice": "5"
+    }
+  }
+}

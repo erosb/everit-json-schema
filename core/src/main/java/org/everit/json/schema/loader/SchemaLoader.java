@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.everit.json.schema.CombinedSchema;
 import org.everit.json.schema.EmptySchema;
@@ -224,6 +225,10 @@ public class SchemaLoader {
 
         public SchemaLoaderBuilder regexpFactory(RegexpFactory regexpFactory) {
             this.regexpFactory = regexpFactory;
+            return this;
+        }
+
+        public <E extends SchemaExtractor> SchemaLoaderBuilder registerSchemaExtractor(Function<SchemaLoader, E> extractorFactory) {
             return this;
         }
     }
