@@ -52,93 +52,13 @@ interface SchemaExtractor {
 
 }
 
-abstract class AbstractSchemaExtractor implements SchemaExtractor {
-
-    static final List<String> NUMBER_SCHEMA_PROPS = asList("minimum", "maximum",
-            "exclusiveMinimum", "exclusiveMaximum", "multipleOf");
-
-    static final List<String> STRING_SCHEMA_PROPS = asList("minLength", "maxLength",
-            "pattern", "format");
-
-    protected JsonObject schemaJson;
-
-    private Set<String> consumedKeys;
-
-    final SchemaLoader defaultLoader;
-
-    private ExclusiveLimitHandler exclusiveLimitHandler;
-
-    AbstractSchemaExtractor(SchemaLoader defaultLoader) {
-        this.defaultLoader = requireNonNull(defaultLoader, "defaultLoader cannot be null");
-    }
-
-    @Override
-    public final ExtractionResult extract(JsonObject schemaJson) {
-        this.schemaJson = requireNonNull(schemaJson, "schemaJson cannot be null");
-        this.exclusiveLimitHandler = ExclusiveLimitHandler.ofSpecVersion(config().specVersion);
-        consumedKeys = new HashSet<>(schemaJson.keySet().size());
-        return new ExtractionResult(consumedKeys, extract());
-    }
-
-    void keyConsumed(String key) {
-        if (schemaJson.keySet().contains(key)) {
-            consumedKeys.add(key);
-        }
-    }
-
-    JsonValue require(String key) {
-        keyConsumed(key);
-        return schemaJson.require(key);
-    }
-
-    Optional<JsonValue> maybe(String key) {
-        keyConsumed(key);
-        return schemaJson.maybe(key);
-    }
-
-    boolean containsKey(String key) {
-        return schemaJson.containsKey(key);
-    }
-
-    boolean schemaHasAnyOf(Collection<String> propNames) {
-        return propNames.stream().anyMatch(schemaJson::containsKey);
-    }
-
-    LoaderConfig config() {
-        return schemaJson.ls.config;
-    }
-
-    ObjectSchema.Builder buildObjectSchema() {
-        config().specVersion.objectKeywords().forEach(this::keyConsumed);
-        return new ObjectSchemaLoader(schemaJson.ls, config(), defaultLoader).load();
-    }
-
-    ArraySchema.Builder buildArraySchema() {
-        config().specVersion.arrayKeywords().forEach(this::keyConsumed);
-        return new ArraySchemaLoader(schemaJson.ls, config(), defaultLoader).load();
-    }
-
-    NumberSchema.Builder buildNumberSchema() {
-        PropertySnifferSchemaExtractor.NUMBER_SCHEMA_PROPS.forEach(this::keyConsumed);
-        NumberSchema.Builder builder = NumberSchema.builder();
-        maybe("minimum").map(JsonValue::requireNumber).ifPresent(builder::minimum);
-        maybe("maximum").map(JsonValue::requireNumber).ifPresent(builder::maximum);
-        maybe("multipleOf").map(JsonValue::requireNumber).ifPresent(builder::multipleOf);
-        maybe("exclusiveMinimum").ifPresent(exclMin -> exclusiveLimitHandler.handleExclusiveMinimum(exclMin, builder));
-        maybe("exclusiveMaximum").ifPresent(exclMax -> exclusiveLimitHandler.handleExclusiveMaximum(exclMax, builder));
-        return builder;
-    }
-
-    abstract List<Schema.Builder<?>> extract();
-}
-
 class EnumSchemaExtractor extends AbstractSchemaExtractor {
 
     EnumSchemaExtractor(SchemaLoader defaultLoader) {
         super(defaultLoader);
     }
 
-    @Override List<Schema.Builder<?>> extract() {
+    @Override public List<Schema.Builder<?>> extract() {
         if (!containsKey("enum")) {
             return emptyList();
         }
@@ -157,7 +77,7 @@ class ReferenceSchemaExtractor extends AbstractSchemaExtractor {
         super(defaultLoader);
     }
 
-    @Override List<Schema.Builder<?>> extract() {
+    @Override public List<Schema.Builder<?>> extract() {
         if (containsKey("$ref")) {
             String ref = require("$ref").requireString();
             return singletonList(new ReferenceLookup(schemaJson.ls).lookup(ref, schemaJson));
@@ -174,7 +94,7 @@ class PropertySnifferSchemaExtractor extends AbstractSchemaExtractor {
         super(defaultLoader);
     }
 
-    @Override List<Schema.Builder<?>> extract() {
+    @Override public List<Schema.Builder<?>> extract() {
         List<Schema.Builder<?>> builders = new ArrayList<>(1);
         if (schemaHasAnyOf(config().specVersion.arrayKeywords())) {
             builders.add(new ArraySchemaLoader(schemaJson.ls, config(), defaultLoader).load().requiresArray(false));
@@ -210,7 +130,7 @@ class TypeBasedSchemaExtractor extends AbstractSchemaExtractor {
         super(defaultLoader);
     }
 
-    @Override List<Schema.Builder<?>> extract() {
+    @Override public List<Schema.Builder<?>> extract() {
         if (containsKey("type")) {
             return singletonList(require("type").canBeMappedTo(JsonArray.class, arr -> (Schema.Builder) buildAnyOfSchemaForMultipleTypes())
                     .orMappedTo(String.class, this::loadForExplicitType)
@@ -259,7 +179,7 @@ class NotSchemaExtractor extends AbstractSchemaExtractor {
         super(defaultLoader);
     }
 
-    @Override List<Schema.Builder<?>> extract() {
+    @Override public List<Schema.Builder<?>> extract() {
         if (containsKey("not")) {
             Schema mustNotMatch = defaultLoader.loadChild(require("not")).build();
             return singletonList(NotSchema.builder().mustNotMatch(mustNotMatch));
@@ -274,7 +194,7 @@ class ConstSchemaExtractor extends AbstractSchemaExtractor {
         super(defaultLoader);
     }
 
-    @Override List<Schema.Builder<?>> extract() {
+    @Override public List<Schema.Builder<?>> extract() {
         if (config().specVersion != DRAFT_4 && containsKey("const")) {
             return singletonList(ConstSchema.builder().permittedValue(require("const").unwrap()));
         } else {
