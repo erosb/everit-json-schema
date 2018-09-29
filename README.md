@@ -16,6 +16,7 @@
 * [Format validators](#format-validators)
   * [Example](#example)
 * [Resolution scopes](#resolution-scopes)
+* [Javadoc](#javadoc)
 
 <a href="http://jetbrains.com"><img src="./jetbrains-logo.png" /></a> Supported by JetBrains.
 
@@ -203,7 +204,7 @@ Since version `1.4.0` it is possible to print the `ValidationException` instance
 JSON-formatted failure reports. The `ValidationException#toJSON()` method returns a `JSONObject` instance with the
 following keys:
 
- * `"message"`: the programmer-friendly exception message (desription of the validation failure)
+ * `"message"`: the programmer-friendly exception message (description of the validation failure)
  * `"keyword"`: the JSON Schema keyword which was violated
  * `"pointerToViolation"`: a JSON Pointer denoting the path from the input document root to its fragment which caused
  the validation failure
@@ -295,7 +296,7 @@ configurable, due to some reported regressions.
 
 ## readOnly and writeOnly context
 
-The library supports the `readOnly` and `writeOnly` keywords which first appeared in Draft 7. If you want to utilize this feature, then before validation you need to tell the vaildator if the
+The library supports the `readOnly` and `writeOnly` keywords which first appeared in Draft 7. If you want to utilize this feature, then before validation you need to tell the validator if the
 validation happens in read or write context. Example:
 
 schema.json:
@@ -388,14 +389,14 @@ SchemaLoader schemaLoader = SchemaLoader.builder()
 	.addFormatValidator("evenlength", new EvenCharNumValidator()) // the EvenCharNumValidator gets bound to the "evenlength" keyword
 	.build();
 Schema schema = schemaLoader.load().build(); // the schema is created using the above created configuration
-schema.validate(jsonDcoument);  // the document validation happens here
+schema.validate(jsonDocument);  // the document validation happens here
 ```
 
 
 ## Resolution scopes
 
 In a JSON Schema document it is possible to use relative URIs to refer previously defined
-types. Such references are expressed using the `"$ref"` and `"id"` keywords. While the specification describes resolution scope alteration and dereferencing in detail, it doesn't explain the expected behavior when the first occuring `"$ref"` or `"id"` is a relative URI.
+types. Such references are expressed using the `"$ref"` and `"id"` keywords. While the specification describes resolution scope alteration and dereferencing in detail, it doesn't explain the expected behavior when the first occurring `"$ref"` or `"id"` is a relative URI.
 
 In the case of this implementation it is possible to explicitly define an absolute URI serving as the base URI (resolution scope) using the appropriate builder method:
 
@@ -415,3 +416,11 @@ SchemaLoader schemaLoader = SchemaLoader.builder()
 [java-json-tools/json-schema-validator]: https://github.com/java-json-tools/json-schema-validator
 [draft-zyp-json-schema-04]: https://tools.ietf.org/html/draft-zyp-json-schema-04
 [draft-fge-json-schema-validation-00 format]: https://tools.ietf.org/html/draft-fge-json-schema-validation-00#section-7
+
+## Javadoc
+
+For the latest release (1.9.2) the javadoc is published [on erosb.github.io](http://erosb.github.io/everit-json-schema/javadoc/1.9.2/)
+
+The generated javadoc of versions 1.0.0 - 1.5.1 is available at [javadoc.io](http://javadoc.io/doc/org.everit.json/org.everit.json.schema/1.5.1)
+
+For the versions in between (1.6.0 - 1.9.1) it isn't published anywhere.
