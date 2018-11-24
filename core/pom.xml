@@ -19,9 +19,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.everit.json</groupId>
-    <artifactId>org.everit.json.schema</artifactId>
-    <version>1.10.0-SNAPSHOT</version>
+    <groupId>com.github.erosb</groupId>
+    <artifactId>everit-json-schema-jdk6</artifactId>
+    <version>1.9.2</version>
     <packaging>bundle</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -33,7 +33,7 @@
     </properties>
     <name>everit-org/json-schema</name>
     <url>https://github.com/everit-org/json-schema</url>
-    <description>Implementation of the JSON Schema Core Draft v4 specification built with the org.json API</description>
+    <description>Implementation of the JSON Schema Core Draft v4 - v7 specification built with the org.json API</description>
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -43,20 +43,68 @@
     </licenses>
     <developers>
         <developer>
-            <name>Everit Team</name>
+            <name>Bence Eros (erosb)</name>
+            <email>ebence88@gmail.com</email>
         </developer>
     </developers>
-    <organization>
-        <name>Everit Kft.</name>
-        <url>http://www.everit.org</url>
-    </organization>
     <scm>
-        <connection>scm:git:git://github.com/everit-org/${projectpath}.git</connection>
-        <developerConnection>scm:git:https://github.com/everit-org/${projectpath}.git</developerConnection>
-        <url>https://github.com/everit-org/${projectpath}</url>
+        <connection>scm:git:git://github.com/erosb/everit-json-schema.git</connection>
+        <developerConnection>scm:git:https://github.com/erosb/everit-json-schema.git</developerConnection>
+        <url>https://github.com/erosb/everit-json-schema</url>
     </scm>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <useReleaseProfile>false</useReleaseProfile>
+                    <releaseProfiles>release</releaseProfiles>
+                    <goals>deploy</goals>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -68,9 +116,9 @@
                         <Import-Package>*
                         </Import-Package>
                         <Export-Package>
-                            ${project.artifactId};version=${project.version},
-                            ${project.artifactId}.loader;version=${project.version},
-                            ${project.artifactId}.regexp;version=${project.version}
+                            org.everit.json.schema;version=${project.version},
+                            org.everit.json.schema.loader;version=${project.version},
+                            org.everit.json.schema.regexp;version=${project.version}
                         </Export-Package>
                     </instructions>
                 </configuration>
@@ -104,41 +152,6 @@
                 <artifactId>coveralls-maven-plugin</artifactId>
                 <version>4.3.0</version>
             </plugin>
-            <!--<plugin>-->
-                <!--<groupId>com.github.siom79.japicmp</groupId>-->
-                <!--<artifactId>japicmp-maven-plugin</artifactId>-->
-                <!--<version>0.13.0</version>-->
-                <!--<configuration>-->
-                    <!--<oldVersion>-->
-                        <!--<dependency>-->
-                            <!--<groupId>com.github.everit-org.json-schema</groupId>-->
-                            <!--<artifactId>org.everit.json.schema</artifactId>-->
-                            <!--<version>1.9.2</version>-->
-                            <!--<type>jar</type>-->
-                        <!--</dependency>-->
-                    <!--</oldVersion>-->
-                    <!--<newVersion>-->
-                        <!--<file>-->
-                            <!--<path>${project.build.directory}/${project.artifactId}-${project.version}.jar</path>-->
-                        <!--</file>-->
-                    <!--</newVersion>-->
-                    <!--<parameter>-->
-                        <!--<skipDiffReport>true</skipDiffReport>-->
-                        <!--<skipXmlReport>true</skipXmlReport>-->
-                        <!--<breakBuildOnSourceIncompatibleModifications>-->
-                            <!--true-->
-                        <!--</breakBuildOnSourceIncompatibleModifications>-->
-                    <!--</parameter>-->
-                <!--</configuration>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<phase>verify</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>cmp</goal>-->
-                        <!--</goals>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
             <plugin>
                 <groupId>net.orfjackal.retrolambda</groupId>
                 <artifactId>retrolambda-maven-plugin</artifactId>
@@ -156,6 +169,18 @@
                     <defaultMethods>true</defaultMethods>
                     <fork>true</fork>
                     <javacHacks>true</javacHacks>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
 
