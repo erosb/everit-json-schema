@@ -1,6 +1,7 @@
 package org.everit.json.schema.loader;
 
 import static java.util.Objects.requireNonNull;
+import static org.everit.json.schema.loader.OrgJsonUtil.toMap;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 import org.everit.json.schema.ReferenceSchema;
 import org.everit.json.schema.Schema;
+import org.everit.json.schema.SchemaLocation;
 import org.everit.json.schema.loader.internal.ReferenceResolver;
 import org.json.JSONObject;
 
@@ -24,8 +26,8 @@ class ReferenceLookup {
      * parameter is an empty object).
      */
     @Deprecated
-    static JSONObject extend(final JSONObject additional, final JSONObject original) {
-        return new JSONObject(extend(additional.toMap(), original.toMap()));
+    static JSONObject extend(JSONObject additional, JSONObject original) {
+        return new JSONObject(extend(toMap(additional), toMap(original)));
     }
 
     static Map<String, Object> extend(Map<String, Object> additional, Map<String, Object> original) {
@@ -139,12 +141,12 @@ class ReferenceLookup {
         if (ls.pointerSchemas.containsKey(absPointerString)) {
             return ls.pointerSchemas.get(absPointerString);
         }
-        JsonValue rawInternalRefereced = lookupObjById(ls.rootSchemaJson, absPointerString);
-        if (rawInternalRefereced != null) {
+        JsonValue rawInternalReferenced = lookupObjById(ls.rootSchemaJson, absPointerString);
+        if (rawInternalReferenced != null) {
             ReferenceSchema.Builder refBuilder = ReferenceSchema.builder()
                     .refValue(relPointerString);
             ls.pointerSchemas.put(absPointerString, refBuilder);
-            Schema referredSchema = new SchemaLoader(rawInternalRefereced.ls).load().build();
+            Schema referredSchema = new SchemaLoader(rawInternalReferenced.ls).load().build();
             refBuilder.build().setReferredSchema(referredSchema);
             return refBuilder;
         }
@@ -159,10 +161,12 @@ class ReferenceLookup {
         JsonPointerEvaluator.QueryResult result = pointer.query();
 
         SchemaLoader childLoader = ls.initChildLoader()
+                .pointerToCurrentObj(SchemaLocation.parseURI(absPointerString))
                 .resolutionScope(!isInternal ? withoutFragment(absPointerString) : ls.id)
                 .schemaJson(result.getQueryResult())
                 .rootSchemaJson(result.getContainingDocument()).build();
         Schema referredSchema = childLoader.load().build();
+        refBuilder.schemaLocation(SchemaLocation.parseURI(absPointerString));
         refBuilder.build().setReferredSchema(referredSchema);
         return refBuilder;
     }

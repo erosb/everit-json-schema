@@ -153,29 +153,37 @@
                 <version>4.3.0</version>
             </plugin>
             <plugin>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.0.1</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.semver</groupId>
-                        <artifactId>enforcer-rule</artifactId>
-                        <version>0.9.33</version>
-                    </dependency>
-                </dependencies>
+                <groupId>com.github.siom79.japicmp</groupId>
+                <artifactId>japicmp-maven-plugin</artifactId>
+                <version>0.13.0</version>
+                <configuration>
+                    <oldVersion>
+                        <dependency>
+                            <groupId>com.github.everit-org.json-schema</groupId>
+                            <artifactId>org.everit.json.schema</artifactId>
+                            <version>1.10.0</version>
+                            <type>jar</type>
+                        </dependency>
+                    </oldVersion>
+                    <newVersion>
+                        <file>
+                            <path>${project.build.directory}/${project.artifactId}-${project.version}.jar</path>
+                        </file>
+                    </newVersion>
+                    <parameter>
+                        <skipDiffReport>true</skipDiffReport>
+                        <skipXmlReport>true</skipXmlReport>
+                        <breakBuildOnSourceIncompatibleModifications>
+                            true
+                        </breakBuildOnSourceIncompatibleModifications>
+                    </parameter>
+                </configuration>
                 <executions>
                     <execution>
-                        <id>check</id>
                         <phase>verify</phase>
                         <goals>
-                            <goal>enforce</goal>
+                            <goal>cmp</goal>
                         </goals>
-                        <configuration>
-                            <rules>
-                                <requireBackwardCompatibility implementation="org.semver.enforcer.RequireBackwardCompatibility">
-                                    <compatibilityType>BACKWARD_COMPATIBLE_USER</compatibilityType>
-                                </requireBackwardCompatibility>
-                            </rules>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -241,7 +249,7 @@
         <dependency>
             <groupId>nl.jqno.equalsverifier</groupId>
             <artifactId>equalsverifier</artifactId>
-            <version>2.3.1</version>
+            <version>3.0.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -261,4 +269,5 @@
             <version>1.1</version>
         </dependency>
     </dependencies>
+
 </project>

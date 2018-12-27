@@ -4,6 +4,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
+import static org.everit.json.schema.loader.OrgJsonUtil.toMap;
 import static org.everit.json.schema.loader.SpecificationVersion.DRAFT_4;
 import static org.everit.json.schema.loader.SpecificationVersion.DRAFT_6;
 import static org.everit.json.schema.loader.SpecificationVersion.DRAFT_7;
@@ -24,13 +25,13 @@ import org.everit.json.schema.FormatValidator;
 import org.everit.json.schema.ReferenceSchema;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.SchemaException;
+import org.everit.json.schema.SchemaLocation;
 import org.everit.json.schema.TrueSchema;
 import org.everit.json.schema.loader.internal.DefaultSchemaClient;
 import org.everit.json.schema.loader.internal.WrappingFormatValidator;
 import org.everit.json.schema.regexp.JavaUtilRegexpFactory;
 import org.everit.json.schema.regexp.RegexpFactory;
 import org.json.JSONObject;
-import org.json.JSONPointer;
 
 /**
  * Loads a JSON schema's JSON representation into schema validator instances.
@@ -56,7 +57,7 @@ public class SchemaLoader {
 
         URI id;
 
-        List<String> pointerToCurrentObj = emptyList();
+        SchemaLocation pointerToCurrentObj = SchemaLocation.empty();
 
         Map<String, FormatValidator> formatValidators = new HashMap<>();
 
@@ -184,12 +185,12 @@ public class SchemaLoader {
         }
 
         public SchemaLoaderBuilder schemaJson(JSONObject schemaJson) {
-            return schemaJson(schemaJson.toMap());
+            return schemaJson(toMap(schemaJson));
         }
 
         public SchemaLoaderBuilder schemaJson(Object schema) {
             if (schema instanceof JSONObject) {
-                schema = (((JSONObject) schema).toMap());
+                schema = toMap((JSONObject) schema);
             }
             this.schemaJson = schema;
             return this;
@@ -200,7 +201,7 @@ public class SchemaLoader {
             return this;
         }
 
-        SchemaLoaderBuilder pointerToCurrentObj(List<String> pointerToCurrentObj) {
+        SchemaLoaderBuilder pointerToCurrentObj(SchemaLocation pointerToCurrentObj) {
             this.pointerToCurrentObj = requireNonNull(pointerToCurrentObj);
             return this;
         }
@@ -337,7 +338,8 @@ public class SchemaLoader {
     }
 
     private Schema.Builder loadSchemaObject(JsonObject o) {
-        Collection<Schema.Builder<?>> extractedSchemas = runSchemaExtractors(o);
+        AdjacentSchemaExtractionState postExtractionState = runSchemaExtractors(o);
+        Collection<Schema.Builder<?>> extractedSchemas = postExtractionState.extractedSchemaBuilders();
         Schema.Builder effectiveReturnedSchema;
         if (extractedSchemas.isEmpty()) {
             effectiveReturnedSchema = EmptySchema.builder();
@@ -350,15 +352,19 @@ public class SchemaLoader {
                     .collect(toList());
             effectiveReturnedSchema = CombinedSchema.allOf(built).isSynthetic(true);
         }
-        loadCommonSchemaProperties(effectiveReturnedSchema);
+        AdjacentSchemaExtractionState postCommonPropLoadingState = loadCommonSchemaProperties(effectiveReturnedSchema, postExtractionState);
+        Map<String, Object> unprocessed = postCommonPropLoadingState.projectedSchemaJson().toMap();
+        effectiveReturnedSchema.unprocessedProperties(unprocessed);
         return effectiveReturnedSchema;
     }
 
-    private Collection<Schema.Builder<?>> runSchemaExtractors(JsonObject o) {
+    private AdjacentSchemaExtractionState runSchemaExtractors(JsonObject o) {
+        AdjacentSchemaExtractionState state = new AdjacentSchemaExtractionState(o);
         if (o.containsKey("$ref")) {
-            return new ReferenceSchemaExtractor(this).extract(o).extractedSchemas;
+            ExtractionResult result = new ReferenceSchemaExtractor(this).extract(o);
+            state = state.reduce(result);
+            return state;
         }
-        Collection<Schema.Builder<?>> extractedSchemas;
         List<SchemaExtractor> extractors = asList(
                 new EnumSchemaExtractor(this),
                 new CombinedSchemaLoader(this),
@@ -367,33 +373,32 @@ public class SchemaLoader {
                 new TypeBasedSchemaExtractor(this),
                 new PropertySnifferSchemaExtractor(this)
         );
-        AdjacentSchemaExtractionState state = new AdjacentSchemaExtractionState(o);
         for (SchemaExtractor extractor : extractors) {
             ExtractionResult result = extractor.extract(state.projectedSchemaJson());
             state = state.reduce(result);
         }
-        extractedSchemas = state.extractedSchemaBuilders();
-        return extractedSchemas;
+        return state;
     }
 
-    private void loadCommonSchemaProperties(Schema.Builder builder) {
-        ls.schemaJson().maybe(config.specVersion.idKeyword()).map(JsonValue::requireString).ifPresent(builder::id);
-        ls.schemaJson().maybe("title").map(JsonValue::requireString).ifPresent(builder::title);
-        ls.schemaJson().maybe("description").map(JsonValue::requireString).ifPresent(builder::description);
+    private AdjacentSchemaExtractionState loadCommonSchemaProperties(Schema.Builder builder, AdjacentSchemaExtractionState state) {
+        KeyConsumer consumedKeys = new KeyConsumer(state.projectedSchemaJson());
+        consumedKeys.maybe(config.specVersion.idKeyword()).map(JsonValue::requireString).ifPresent(builder::id);
+        consumedKeys.maybe("title").map(JsonValue::requireString).ifPresent(builder::title);
+        consumedKeys.maybe("description").map(JsonValue::requireString).ifPresent(builder::description);
         if (ls.specVersion() == DRAFT_7) {
-            ls.schemaJson().maybe("readOnly").map(JsonValue::requireBoolean).ifPresent(builder::readOnly);
-            ls.schemaJson().maybe("writeOnly").map(JsonValue::requireBoolean).ifPresent(builder::writeOnly);
+            consumedKeys.maybe("readOnly").map(JsonValue::requireBoolean).ifPresent(builder::readOnly);
+            consumedKeys.maybe("writeOnly").map(JsonValue::requireBoolean).ifPresent(builder::writeOnly);
         }
         if (config.nullableSupport) {
-            builder.nullable(ls.schemaJson()
-                    .maybe("nullable")
+            builder.nullable(consumedKeys.maybe("nullable")
                     .map(JsonValue::requireBoolean)
                     .orElse(Boolean.FALSE));
         }
         if (config.useDefaults) {
-            ls.schemaJson().maybe("default").map(JsonValue::deepToOrgJson).ifPresent(builder::defaultValue);
+            consumedKeys.maybe("default").map(JsonValue::deepToOrgJson).ifPresent(builder::defaultValue);
         }
-        builder.schemaLocation(new JSONPointer(ls.pointerToCurrentObj).toURIFragment());
+        builder.schemaLocation(ls.pointerToCurrentObj);
+        return state.reduce(new ExtractionResult(consumedKeys.collect(), emptyList()));
     }
 
     /**

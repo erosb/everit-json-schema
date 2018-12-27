@@ -17,10 +17,11 @@ package org.everit.json.schema;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toMap;
+import static org.everit.json.schema.JSONMatcher.sameJsonAs;
 import static org.everit.json.schema.TestSupport.buildWithLocation;
 import static org.everit.json.schema.TestSupport.loadAsV6;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.AbstractMap;
@@ -381,7 +382,7 @@ public class ObjectSchemaTest {
     public void equalsVerifier() {
         EqualsVerifier.forClass(ObjectSchema.class)
                 .withRedefinedSuperclass()
-                .withIgnoredFields("schemaLocation")
+                .withIgnoredFields("schemaLocation", "location")
                 .withPrefabValues(Pattern.class, Pattern.compile("red"), Pattern.compile("black"))
                 .suppress(Warning.STRICT_INHERITANCE)
                 .verify();
@@ -391,7 +392,7 @@ public class ObjectSchemaTest {
     public void toStringTest() {
         JSONObject rawSchemaJson = loader.readObj("tostring/objectschema.json");
         String actual = SchemaLoader.load(rawSchemaJson).toString();
-        assertTrue(ObjectComparator.deepEquals(rawSchemaJson, new JSONObject(actual)));
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchemaJson));
     }
 
     @Test
@@ -399,22 +400,31 @@ public class ObjectSchemaTest {
         JSONObject rawSchemaJson = loader.readObj("tostring/objectschema.json");
         rawSchemaJson.remove("type");
         String actual = SchemaLoader.load(rawSchemaJson).toString();
-        assertTrue(ObjectComparator.deepEquals(rawSchemaJson, new JSONObject(actual)));
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchemaJson));
+    }
+
+    @Test
+    public void toStringWithUnprocessedProps() {
+        JSONObject rawSchemaJson = loader.readObj("tostring/objectschema-unprocessed.json");
+        Schema schema = SchemaLoader.load(rawSchemaJson);
+        String actual = schema.toString();
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchemaJson));
     }
 
     @Test
     public void toStringNoAdditionalProperties() {
         JSONObject rawSchemaJson = loader.readObj("tostring/objectschema.json");
         rawSchemaJson.put("additionalProperties", false);
-        String actual = SchemaLoader.load(rawSchemaJson).toString();
-        assertTrue(ObjectComparator.deepEquals(rawSchemaJson, new JSONObject(actual)));
+        Schema schema = SchemaLoader.load(rawSchemaJson);
+        String actual = schema.toString();
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchemaJson));
     }
 
     @Test
     public void toStringSchemaDependencies() {
         JSONObject rawSchemaJson = loader.readObj("tostring/objectschema-schemadep.json");
         String actual = SchemaLoader.load(rawSchemaJson).toString();
-        assertTrue(ObjectComparator.deepEquals(rawSchemaJson, new JSONObject(actual)));
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchemaJson));
     }
 
     @Test
@@ -456,7 +466,7 @@ public class ObjectSchemaTest {
 
         String actual = subject.toString();
 
-        assertTrue(ObjectComparator.deepEquals(rawSchema, new JSONObject(actual)));
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchema));
     }
 
     @Test

@@ -1,6 +1,5 @@
 package org.everit.json.schema.loader;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.everit.json.schema.TestSupport.asStream;
 import static org.junit.Assert.assertEquals;
@@ -15,6 +14,7 @@ import org.everit.json.schema.NumberSchema;
 import org.everit.json.schema.ReferenceSchema;
 import org.everit.json.schema.ResourceLoader;
 import org.everit.json.schema.Schema;
+import org.everit.json.schema.SchemaLocation;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,12 +32,23 @@ public class ReferenceLookupTest {
     }
 
     private Schema performLookup(String pointerToRef) {
+        ReferenceSchema ref = obtainReferenceSchema(pointerToRef);
+        return ref.getReferredSchema();
+    }
+
+    private ReferenceSchema obtainReferenceSchema(String pointerToRef) {
         JsonObject jsonValue = query(pointerToRef).requireObject();
         ReferenceLookup subject = new ReferenceLookup(jsonValue.ls);
         String refPointer = jsonValue.require("$ref").requireString();
         Schema.Builder<?> actual = subject.lookup(refPointer, jsonValue);
-        ReferenceSchema ref = (ReferenceSchema) actual.build();
-        return ref.getReferredSchema();
+        return (ReferenceSchema) actual.build();
+    }
+
+    @Test
+    public void referenceSchemaLocationIsSet() {
+        when(httpClient.get("http://localhost/child-ref")).thenReturn(asStream(v4Subschema));
+        ReferenceSchema ref = obtainReferenceSchema("#/properties/definitionInRemote");
+        assertEquals("http://localhost/child-ref#/definitions/SubSchema", ref.getSchemaLocation());
     }
 
     @Test
@@ -52,7 +63,7 @@ public class ReferenceLookupTest {
                 rootSchemaJson,
                 rootSchemaJson,
                 null,
-                emptyList()
+                SchemaLocation.empty()
         );
         return JsonPointerEvaluator.forDocument(rootLs.rootSchemaJson(), pointer).query().getQueryResult();
     }

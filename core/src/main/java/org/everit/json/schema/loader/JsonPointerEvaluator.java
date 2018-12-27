@@ -1,8 +1,8 @@
 package org.everit.json.schema.loader;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
+import static org.everit.json.schema.loader.OrgJsonUtil.toMap;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,10 +15,11 @@ import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.function.Supplier;
 
+import org.everit.json.schema.JSONPointerException;
 import org.everit.json.schema.SchemaException;
+import org.everit.json.schema.SchemaLocation;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONPointerException;
 import org.json.JSONTokener;
 
 /**
@@ -82,7 +83,7 @@ class JsonPointerEvaluator {
                 strBuilder.append(line);
             }
             resp = strBuilder.toString();
-            return new JsonObject(new JSONObject(new JSONTokener(resp)).toMap());
+            return new JsonObject(toMap(new JSONObject(new JSONTokener(resp))));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (JSONException e) {
@@ -106,7 +107,7 @@ class JsonPointerEvaluator {
     }
 
     private static JsonObject configureBasedOnState(JsonObject obj, LoadingState callingState) {
-        obj.ls = new LoadingState(callingState.config, callingState.pointerSchemas, obj, obj, null, emptyList());
+        obj.ls = new LoadingState(callingState.config, callingState.pointerSchemas, obj, obj, null, SchemaLocation.empty());
         return obj;
     }
 

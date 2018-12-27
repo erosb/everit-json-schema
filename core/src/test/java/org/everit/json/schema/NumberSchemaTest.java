@@ -15,13 +15,13 @@
  */
 package org.everit.json.schema;
 
+import static org.everit.json.schema.JSONMatcher.sameJsonAs;
 import static org.everit.json.schema.TestSupport.buildWithLocation;
 import static org.everit.json.schema.TestSupport.loadAsV6;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -173,7 +173,7 @@ public class NumberSchemaTest {
     public void equalsVerifier() {
         EqualsVerifier.forClass(NumberSchema.class)
                 .withRedefinedSuperclass()
-                .withIgnoredFields("schemaLocation")
+                .withIgnoredFields("schemaLocation", "location")
                 .suppress(Warning.STRICT_INHERITANCE)
                 .verify();
     }
@@ -182,7 +182,7 @@ public class NumberSchemaTest {
     public void toStringTest() {
         JSONObject rawSchemaJson = loader.readObj("numberschema.json");
         String actual = SchemaLoader.load(rawSchemaJson).toString();
-        assertTrue(ObjectComparator.deepEquals(rawSchemaJson, new JSONObject(actual)));
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchemaJson));
     }
 
     @Test
@@ -191,7 +191,7 @@ public class NumberSchemaTest {
         rawSchemaJson.put("exclusiveMinimum", 5);
         rawSchemaJson.put("exclusiveMaximum", 10);
         String actual = loadAsV6(rawSchemaJson).toString();
-        assertTrue(ObjectComparator.deepEquals(rawSchemaJson, new JSONObject(actual)));
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchemaJson));
     }
 
     @Test
@@ -218,7 +218,7 @@ public class NumberSchemaTest {
         JSONObject rawSchemaJson = loader.readObj("numberschema.json");
         rawSchemaJson.remove("type");
         String actual = SchemaLoader.load(rawSchemaJson).toString();
-        assertTrue(ObjectComparator.deepEquals(rawSchemaJson, new JSONObject(actual)));
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchemaJson));
     }
 
     @Test
@@ -226,7 +226,7 @@ public class NumberSchemaTest {
         JSONObject rawSchemaJson = loader.readObj("numberschema.json");
         rawSchemaJson.put("type", "integer");
         String actual = SchemaLoader.load(rawSchemaJson).toString();
-        assertTrue(ObjectComparator.deepEquals(rawSchemaJson, new JSONObject(actual)));
+        assertThat(new JSONObject(actual), sameJsonAs(rawSchemaJson));
     }
 
     @Test
@@ -258,13 +258,13 @@ public class NumberSchemaTest {
                 .input(JSONObject.NULL)
                 .expect();
     }
-    
+
     @Test
     public void accepts_bigInteger() {
         NumberSchema regularNumberSchema = NumberSchema.builder().build();
         NumberSchema requiresInteger = NumberSchema.builder().requiresInteger(true).build();
-        
-        tryIntegerTypes(regularNumberSchema);        
+
+        tryIntegerTypes(regularNumberSchema);
         tryIntegerTypes(requiresInteger);
     }
 

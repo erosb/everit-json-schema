@@ -11,11 +11,11 @@ import static org.mockito.Mockito.when;
 
 import java.io.InputStream;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.everit.json.schema.ResourceLoader;
 import org.everit.json.schema.SchemaException;
+import org.everit.json.schema.SchemaLocation;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -30,7 +30,7 @@ public class JsonPointerEvaluatorTest {
         JsonObject actual = pointer.query().getQueryResult().requireObject();
         assertEquals("dummy schema at #/definitions/Bar", actual.require("description").requireString());
         assertEquals("http://localhost:1234/folder/", actual.ls.id.toString());
-        assertEquals(asList("definitions", "Bar"), actual.ls.pointerToCurrentObj);
+        assertEquals(new SchemaLocation(asList("definitions", "Bar")), actual.ls.pointerToCurrentObj);
     }
 
     @Test(expected = SchemaException.class)
@@ -39,7 +39,7 @@ public class JsonPointerEvaluatorTest {
         JsonObject actual = pointer.query().getQueryResult().requireObject();
         assertEquals("dummy schema at #/definitions/Bar", actual.require("description").requireString());
         assertEquals("http://localhost:1234/folder/", actual.ls.id.toString());
-        assertEquals(asList("definitions", "Bar"), actual.ls.pointerToCurrentObj);
+        assertEquals(new SchemaLocation(asList("definitions", "Bar")), actual.ls.pointerToCurrentObj);
     }
 
     @Test
@@ -69,7 +69,7 @@ public class JsonPointerEvaluatorTest {
         Object rootSchemaJson = this.rootSchemaJson;
         HashMap<String, Object> schemaJson = new HashMap<>();
         schemaJson.put("$ref", ref);
-        return new LoadingState(config, new HashMap<>(), rootSchemaJson, schemaJson, parentScopeId, new ArrayList<>());
+        return new LoadingState(config, new HashMap<>(), rootSchemaJson, schemaJson, parentScopeId, SchemaLocation.empty());
     }
 
     @Test
@@ -81,7 +81,7 @@ public class JsonPointerEvaluatorTest {
         JsonObject actual = pointer.query().getQueryResult().requireObject();
         assertEquals("dummy schema at #/definitions/Bar", actual.require("description").requireString());
         assertEquals("http://localhost:1234/folder/", actual.ls.id.toString());
-        assertEquals(asList("definitions", "Bar"), actual.ls.pointerToCurrentObj);
+        assertEquals(new SchemaLocation(asList("definitions", "Bar")), actual.ls.pointerToCurrentObj);
     }
 
     protected InputStream rootSchemaJsonAsStream() {

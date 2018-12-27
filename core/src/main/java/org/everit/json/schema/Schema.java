@@ -1,6 +1,10 @@
 package org.everit.json.schema;
 
+import static java.util.Collections.unmodifiableMap;
+
 import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.everit.json.schema.internal.JSONPrinter;
@@ -27,7 +31,7 @@ public abstract class Schema {
 
         private String id;
 
-        private String schemaLocation;
+        private SchemaLocation schemaLocation;
 
         private Object defaultValue;
 
@@ -36,6 +40,8 @@ public abstract class Schema {
         private Boolean readOnly = null;
 
         private Boolean writeOnly = null;
+
+        private Map<String, Object> unprocessedProperties = new HashMap<>(0);
 
         public Builder<S> title(String title) {
             this.title = title;
@@ -52,8 +58,16 @@ public abstract class Schema {
             return this;
         }
 
+        /**
+         * @deprecated Use {@link #schemaLocation(SchemaLocation)} instead.
+         */
+        @Deprecated
         public Builder<S> schemaLocation(String schemaLocation) {
-            this.schemaLocation = schemaLocation;
+            return schemaLocation(SchemaLocation.parseURI(schemaLocation));
+        }
+
+        public Builder<S> schemaLocation(SchemaLocation location) {
+            this.schemaLocation = location;
             return this;
         }
 
@@ -77,6 +91,11 @@ public abstract class Schema {
             return this;
         }
 
+        public Builder<S> unprocessedProperties(Map<String, Object> unprocessedProperties) {
+            this.unprocessedProperties = unprocessedProperties;
+            return this;
+        }
+
         public abstract S build();
 
     }
@@ -87,7 +106,10 @@ public abstract class Schema {
 
     private final String id;
 
+    @Deprecated
     protected final String schemaLocation;
+
+    private final SchemaLocation location;
 
     private final Object defaultValue;
 
@@ -96,6 +118,8 @@ public abstract class Schema {
     private final Boolean readOnly;
 
     private final Boolean writeOnly;
+
+    private final Map<String, Object> unprocessedProperties;
 
     /**
      * Constructor.
@@ -107,11 +131,13 @@ public abstract class Schema {
         this.title = builder.title;
         this.description = builder.description;
         this.id = builder.id;
-        this.schemaLocation = builder.schemaLocation;
+        this.schemaLocation = builder.schemaLocation == null ? null : builder.schemaLocation.toString();
+        this.location = builder.schemaLocation;
         this.defaultValue = builder.defaultValue;
         this.nullable = builder.nullable;
         this.readOnly = builder.readOnly;
         this.writeOnly = builder.writeOnly;
+        this.unprocessedProperties = new HashMap<>(builder.unprocessedProperties);
     }
 
     /**
@@ -186,7 +212,8 @@ public abstract class Schema {
                     Objects.equals(id, schema.id) &&
                     Objects.equals(nullable, schema.nullable) &&
                     Objects.equals(readOnly, schema.readOnly) &&
-                    Objects.equals(writeOnly, schema.writeOnly);
+                    Objects.equals(writeOnly, schema.writeOnly) &&
+                    Objects.equals(unprocessedProperties, schema.unprocessedProperties);
         } else {
             return false;
         }
@@ -194,7 +221,7 @@ public abstract class Schema {
 
     @Override
     public int hashCode() {
-        return Objects.hash(title, description, id, defaultValue, nullable, readOnly, writeOnly);
+        return Objects.hash(title, description, id, defaultValue, nullable, readOnly, writeOnly, unprocessedProperties);
     }
 
     public String getTitle() {
@@ -211,6 +238,10 @@ public abstract class Schema {
 
     public String getSchemaLocation() {
         return schemaLocation;
+    }
+
+    public SchemaLocation getLocation() {
+        return location;
     }
 
     public Object getDefaultValue() {
@@ -234,6 +265,14 @@ public abstract class Schema {
     }
 
     /**
+     * Returns the properties of the original schema JSON which aren't keywords of json schema
+     * (therefore they weren't recognized during schema loading).
+     */
+    public Map<String, Object> getUnprocessedProperties() {
+        return unmodifiableMap(unprocessedProperties);
+    }
+
+    /**
      * Describes the instance as a JSONObject to {@code writer}.
      * <p>
      * First it adds the {@code "title} , {@code "description"} and {@code "id"} properties then calls
@@ -254,6 +293,9 @@ public abstract class Schema {
         writer.ifPresent("readOnly", readOnly);
         writer.ifPresent("writeOnly", writeOnly);
         describePropertiesTo(writer);
+        unprocessedProperties.forEach((key, val) -> {
+            writer.key(key).value(val);
+        });
         writer.endObject();
     }
 
@@ -282,12 +324,12 @@ public abstract class Schema {
 
     @Deprecated
     protected ValidationException failure(String message, String keyword) {
-        return new ValidationException(this, message, keyword, schemaLocation);
+        return new ValidationException(this, message, keyword, schemaLocation.toString());
     }
 
     @Deprecated
     protected ValidationException failure(Class<?> expectedType, Object actualValue) {
-        return new ValidationException(this, expectedType, actualValue, "type", schemaLocation);
+        return new ValidationException(this, expectedType, actualValue, "type", schemaLocation.toString());
     }
 
     /**

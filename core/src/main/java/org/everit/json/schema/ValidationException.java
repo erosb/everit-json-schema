@@ -1,6 +1,8 @@
 package org.everit.json.schema;
 
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static org.everit.json.schema.JSONPointer.escape;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -305,10 +307,6 @@ public class ValidationException extends RuntimeException {
         this(violatedSchema, new StringBuilder("#"), message, causingExceptions);
     }
 
-    private String escapeFragment(String fragment) {
-        return fragment.replace("~", "~0").replace("/", "~1");
-    }
-
     public List<ValidationException> getCausingExceptions() {
         return causingExceptions;
     }
@@ -320,9 +318,9 @@ public class ValidationException extends RuntimeException {
      */
     public List<String> getAllMessages() {
         if (causingExceptions.isEmpty()) {
-            return Collections.singletonList(getMessage());
+            return singletonList(getMessage());
         } else {
-            return getAllMessages(causingExceptions).stream().collect(Collectors.toList());
+            return new ArrayList<>(getAllMessages(causingExceptions));
         }
     }
 
@@ -389,7 +387,7 @@ public class ValidationException extends RuntimeException {
      * @return the new {@code ViolationException} instance
      */
     public ValidationException prepend(String fragment, Schema violatedSchema) {
-        String escapedFragment = escapeFragment(requireNonNull(fragment, "fragment cannot be null"));
+        String escapedFragment = escape(requireNonNull(fragment, "fragment cannot be null"));
         StringBuilder newPointer = this.pointerToViolation.insert(1, '/').insert(2, escapedFragment);
         List<ValidationException> prependedCausingExceptions = causingExceptions.stream()
                 .map(exc -> exc.prepend(escapedFragment))
@@ -469,7 +467,7 @@ public class ValidationException extends RuntimeException {
             return false;
         if (!causingExceptions.equals(that.causingExceptions))
             return false;
-        return Objects.equals(keyword, that.keyword);
+        return Objects.equals(keyword, that.keyword) && Objects.equals(getMessage(), that.getMessage());
     }
 
     @Override public int hashCode() {
