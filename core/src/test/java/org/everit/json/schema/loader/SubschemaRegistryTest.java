@@ -7,7 +7,6 @@ import static org.junit.Assert.assertSame;
 import org.everit.json.schema.ResourceLoader;
 import org.everit.json.schema.SchemaLocation;
 import org.everit.json.schema.loader.internal.DefaultSchemaClient;
-import org.json.JSONObject;
 import org.junit.Test;
 
 public class SubschemaRegistryTest {

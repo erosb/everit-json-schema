@@ -111,10 +111,6 @@ class JsonPointerEvaluator {
 
     private static JsonObject configureBasedOnState(JsonObject obj, LoadingState callingState, String id) {
         URI documentURI = validateURI(callingState, id).asJavaURI();
-//        obj.ls = new LoadingState(callingState.config,
-//                callingState.pointerSchemas, obj, obj,
-//                documentURI, new SchemaLocation(documentURI, emptyList()),
-//                callingState.subschemaRegistries);
         obj.ls = callingState.createCopyForNewSchemaJson(documentURI, obj, new SchemaLocation(documentURI, emptyList()));
         return obj;
     }
